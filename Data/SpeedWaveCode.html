@@ -1,0 +1,159 @@
+@echo off
+chcp 65001 >nul
+:: Check for admin privileges
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo This script needs to be run as administrator. Restarting with elevated privileges...
+    powershell -Command "Start-Process cmd -ArgumentList '/c', '%~s0' -Verb runAs"
+    exit
+)
+
+:: Reset environment and initialize directory
+:reset
+if not exist "SWV_save" (
+    md SWV_save
+)
+
+:fetch
+
+:: Initialize variables
+setlocal enabledelayedexpansion
+
+set "VerUICode=https://nittarpp.github.io/SPEEDWAVE_PROJECT/Data/Ver_UI.html"
+set "VerUIFile=SWV_save\VerUI.txt"
+
+set "StartUpCode=https://nittarpp.github.io/SPEEDWAVE_PROJECT/Data/Start_Up.html"
+set "StartUpFile=SWV_save\StartUp.txt"
+
+set "TempClearCode=https://nittarpp.github.io/SPEEDWAVE_PROJECT/Data/Temp.html"
+set "TempFile=SWV_save\Temp.txt"
+
+set "TempBatchFile=%TEMP%\Temp_StartUp.bat"
+set "LogFile=%TEMP%\Log.txt"
+
+set "SpeedWaveCode=https://nittarpp.github.io/SPEEDWAVE_PROJECT/Data/SpeedWaveCode.html"
+set "SpeedWaveFile=SWV_save\SpeedWave.txt"
+
+set "UpdateLogsCode=https://nittarpp.github.io/SPEEDWAVE_PROJECT/Data/UpdateLogs.html"
+set "UpdateLogsFile=SWV_save\UpdateLogs.txt"
+
+:: Fetch the StartUp.html content and save it as StartUp.txt
+
+cls
+echo Fectch HTML DATA
+
+curl -s -o "%SpeedWaveFile%" "%SpeedWaveCode%" 2>> "%LogFile%"
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed to fetch SpeedWaveCode.html >> "%LogFile%"
+    pause
+    exit /b
+)
+
+curl -s -o "%StartUpFile%" "%StartUpCode%" 2>> "%LogFile%"
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed to fetch Start_Up.html >> "%LogFile%"
+    pause
+    exit /b
+)
+
+curl -s -o "%VerUIFile%" "%VerUICode%" 2>> "%LogFile%"
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed to fetch >> "%LogFile%"
+    pause
+    exit /b
+)
+
+curl -s -o "%TempFile%" "%TempClearCode%" 2>> "%LogFile%"
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed to fetch >> "%LogFile%"
+    pause
+    exit /b
+)
+
+curl -s -o "%UpdateLogsFile%" "%UpdateLogsCode%" 2>> "%LogFile%"
+if %ERRORLEVEL% NEQ 0 (
+    echo Failed to fetch >> "%LogFile%"
+    pause
+    exit /b
+)
+
+set "Newver="
+if exist "%VerUIFile%" (
+    for /f "delims=" %%i in ('type "%VerUIFile%"') do set "Newver=%%i"
+)
+
+if "%Newver%"=="" (
+    echo Failed to read version info from %VerUIFile%. >> "%LogFile%"
+    echo Failed to read version info from %VerUIFile%.
+    pause
+	exit
+	)
+
+set "Ver=0.0.0"
+
+:: Convert version to numbers for comparison
+for /f "tokens=1,2,3 delims=." %%a in ("%Ver%") do (
+    set /a Ver1=%%a
+    set /a Ver2=%%b
+    set /a Ver3=%%c
+)
+for /f "tokens=1,2,3 delims=." %%a in ("%Newver%") do (
+    set /a Newver1=%%a
+    set /a Newver2=%%b
+    set /a Newver3=%%c
+)
+
+:: Compare versions
+set "VersionUpdateNeeded=false"
+if %Ver1% LSS %Newver1% (
+    set "VersionUpdateNeeded=true"
+) else if %Ver1% EQU %Newver1% (
+    if %Ver2% LSS %Newver2% (
+        set "VersionUpdateNeeded=true"
+    ) else if %Ver2% EQU %Newver2% (
+        if %Ver3% LSS %Newver3% (
+            set "VersionUpdateNeeded=true"
+        )
+    )
+)
+
+:: Main program loop
+:start
+title Speed Wave VP
+cls
+echo Speed Wave Have New Ui For best Code and New controll
+echo Speed Wave: Hello %username%! A new Speed Wave with big data needs to be added to your PC from all code saved on GitHub.
+echo.
+echo 1. Start Up Speed Wave boot    2. Temp Clear
+echo (type "Update Logs", For See New Update)
+echo.
+set /p data=Choose:
+
+if /i "%data%"=="1" (
+    :: Copy the contents of StartUp.txt to a temporary batch file and run it
+    copy "%StartUpFile%" "%TempBatchFile%" >nul
+    call "%TempBatchFile%"
+    del "%TempBatchFile%"
+    goto fetch
+) else if /i "%data%"=="2" (
+    copy "%TempFile%" "%TempBatchFile%" >nul
+    call "%TempBatchFile%"
+    del "%TempBatchFile%"
+    goto fetch
+)  else if /i "%data%"=="Update Logs" (
+    copy "%UpdateLogsFile%" "%TempBatchFile%" >nul
+    call "%TempBatchFile%"
+    del "%TempBatchFile%"
+    goto fetch
+) else (
+    goto fetch
+)
+
+shutdown t/ 1 >null
+goto fetch
+:: Cleanup temporary files (optional)
+:cleanup
+del "%LogFile%" >nul 2>&1
+del "%TempBatchFile%" >nul 2>&1
+echo Temporary files cleaned up.
+exit /b
