@@ -1,7 +1,0 @@
-@echo off
-titel Speed Wave Temp Clear Clound
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
-del /s /f /q C:\Windows\Temp\*.* 2>> %LogFile%
-del /s /f /q C:\Users\%username%\AppData\Local\Temp\*.* 2>> %LogFile%
-
-goto reset
